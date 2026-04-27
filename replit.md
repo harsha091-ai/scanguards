@@ -27,6 +27,7 @@ QR-based attendance app for security guards built on TanStack Start (React 19 + 
 - **Workflow**: `Start application` runs `npm run dev` on port `5000` (webview).
 - **Vite dev server**: bound to `0.0.0.0:5000`, `allowedHosts: true` so the Replit iframe proxy can reach it.
 - **Env vars**: stored in `.env` (Supabase URL + keys, Resend, etc.).
+- **SSR**: disabled (`defaultSsr: false` in `src/router.tsx`). The Replit dev preview iframe injects a devtools script into the document head that conflicts with TanStack's SSR head output, causing React 19 hydration mismatches. Client-only rendering avoids this and matches how the app would behave in most production hosting setups for this stack.
 
 ## Scripts
 
