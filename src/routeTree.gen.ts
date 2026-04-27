@@ -12,7 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
-import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppScanRouteImport } from './routes/_app.scan'
 import { Route as AppSalaryRouteImport } from './routes/_app.salary'
 import { Route as AppProfileRouteImport } from './routes/_app.profile'
@@ -34,10 +34,10 @@ const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppIndexRoute = AppIndexRouteImport.update({
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AppRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppScanRoute = AppScanRouteImport.update({
   id: '/scan',
@@ -71,7 +71,7 @@ const AppAdminRoute = AppAdminRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AppIndexRoute
+  '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/admin': typeof AppAdminRoute
@@ -82,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/scan': typeof AppScanRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/admin': typeof AppAdminRoute
@@ -90,10 +91,10 @@ export interface FileRoutesByTo {
   '/profile': typeof AppProfileRoute
   '/salary': typeof AppSalaryRoute
   '/scan': typeof AppScanRoute
-  '/': typeof AppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
@@ -103,7 +104,6 @@ export interface FileRoutesById {
   '/_app/profile': typeof AppProfileRoute
   '/_app/salary': typeof AppSalaryRoute
   '/_app/scan': typeof AppScanRoute
-  '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -119,6 +119,7 @@ export interface FileRouteTypes {
     | '/scan'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/login'
     | '/signup'
     | '/admin'
@@ -127,9 +128,9 @@ export interface FileRouteTypes {
     | '/profile'
     | '/salary'
     | '/scan'
-    | '/'
   id:
     | '__root__'
+    | '/'
     | '/_app'
     | '/login'
     | '/signup'
@@ -139,10 +140,10 @@ export interface FileRouteTypes {
     | '/_app/profile'
     | '/_app/salary'
     | '/_app/scan'
-    | '/_app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
@@ -171,12 +172,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/': {
-      id: '/_app/'
+    '/': {
+      id: '/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof AppIndexRouteImport
-      parentRoute: typeof AppRoute
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/scan': {
       id: '/_app/scan'
@@ -230,7 +231,6 @@ interface AppRouteChildren {
   AppProfileRoute: typeof AppProfileRoute
   AppSalaryRoute: typeof AppSalaryRoute
   AppScanRoute: typeof AppScanRoute
-  AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -240,12 +240,12 @@ const AppRouteChildren: AppRouteChildren = {
   AppProfileRoute: AppProfileRoute,
   AppSalaryRoute: AppSalaryRoute,
   AppScanRoute: AppScanRoute,
-  AppIndexRoute: AppIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
