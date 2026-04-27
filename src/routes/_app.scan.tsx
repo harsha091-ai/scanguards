@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/_app/scan")({
   head: () => ({ meta: [{ title: "Scan QR — GuardCheck" }] }),
@@ -18,6 +19,7 @@ export const Route = createFileRoute("/_app/scan")({
 function ScanPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const containerId = "qr-reader";
   const [scanning, setScanning] = useState(false);
@@ -31,7 +33,9 @@ function ScanPage() {
       // Cleanup on unmount
       const s = scannerRef.current;
       if (s && s.isScanning) {
-        s.stop().catch(() => {}).finally(() => s.clear());
+        s.stop()
+          .catch(() => {})
+          .finally(() => s.clear());
       }
     };
   }, []);
@@ -64,6 +68,7 @@ function ScanPage() {
         .eq("user_id", user!.id)
         .maybeSingle();
       if (gErr) throw gErr;
+
       if (!guard) {
         const { data: created, error: cErr } = await supabase
           .from("guards")
@@ -76,6 +81,47 @@ function ScanPage() {
           .single();
         if (cErr) throw cErr;
         guard = created;
+      }
+
+      // Find site by QR code
+      let siteId = guard.site_id;
+      if (!siteId) {
+        const { data: site } = await supabase
+          .from("sites")
+          .select("id")
+          .eq("qr_code_value", decodedText)
+          .maybeSingle();
+        
+        if (site) {
+          siteId = site.id;
+          // Update guard's default site
+          await supabase.from("guards").update({ site_id: siteId }).eq("id", guard.id);
+        } else {
+          // Try to get the first available site
+          const { data: firstSite } = await supabase.from("sites").select("id").limit(1).maybeSingle();
+          if (firstSite) {
+            siteId = firstSite.id;
+          } else {
+            // Auto-create a default site if none exist (for demo/onboarding)
+            const { data: newSite, error: sErr } = await supabase
+              .from("sites")
+              .insert({
+                site_name: "Default Site",
+                location: "Main Entrance",
+                qr_code_value: decodedText,
+              })
+              .select("id")
+              .single();
+            if (!sErr && newSite) {
+              siteId = newSite.id;
+              await supabase.from("guards").update({ site_id: siteId }).eq("id", guard.id);
+            }
+          }
+        }
+      }
+
+      if (!siteId) {
+        throw new Error("Unable to identify or create a site for this scan. Please contact admin.");
       }
 
       const todayStr = format(new Date(), "yyyy-MM-dd");
@@ -99,7 +145,7 @@ function ScanPage() {
 
       const { error: insErr } = await supabase.from("attendance").insert({
         guard_id: guard.id,
-        site_id: guard.site_id ?? null,
+        site_id: siteId,
         date: todayStr,
         status: "present",
         latitude: lat,
@@ -107,9 +153,12 @@ function ScanPage() {
       });
       if (insErr) throw insErr;
 
+      // Invalidate and refetch attendance queries to refresh the calendar
+      await qc.refetchQueries({ queryKey: ["attendance"] });
+
       setSuccess(true);
       toast.success("Attendance marked successfully");
-      setTimeout(() => navigate({ to: "/dashboard" }), 1500);
+      setTimeout(() => navigate({ to: "/attendance" }), 1500);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed to mark attendance";
       setError(msg);
@@ -165,9 +214,7 @@ function ScanPage() {
       setScanning(false);
       scannerRef.current = null;
       const msg = e instanceof Error ? e.message : "Camera access failed.";
-      setError(
-        `${msg} Please allow camera permission in your browser settings and use HTTPS.`,
-      );
+      setError(`${msg} Please allow camera permission in your browser settings and use HTTPS.`);
     }
   };
 
@@ -195,13 +242,18 @@ function ScanPage() {
       <Card className="overflow-hidden p-0 shadow-[var(--shadow-card)]">
         <div className="relative aspect-square w-full bg-muted" style={{ minHeight: 280 }}>
           {/* html5-qrcode injects the <video> here. Keep it empty when scanner is active. */}
-          <div id={containerId} className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover" />
+          <div
+            id={containerId}
+            className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover"
+          />
           {!scanning && !processing && (
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                 <Camera className="h-8 w-8" />
               </div>
-              <p className="text-sm text-muted-foreground">Tap "Start scanning" to open the camera</p>
+              <p className="text-sm text-muted-foreground">
+                Tap "Start scanning" to open the camera
+              </p>
             </div>
           )}
           {processing && (

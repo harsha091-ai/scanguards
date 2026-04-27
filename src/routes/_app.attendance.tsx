@@ -40,7 +40,7 @@ function AttendancePage() {
         .select("id, created_at")
         .eq("user_id", user!.id)
         .maybeSingle();
-      if (!guard) return { presentDates: new Set<string>(), guardCreated: null as Date | null };
+      if (!guard) return { presentDates: new Set<string>(), guardCreatedDate: null };
 
       const { data: rows } = await supabase
         .from("attendance")
@@ -51,7 +51,7 @@ function AttendancePage() {
 
       return {
         presentDates: new Set((rows ?? []).map((r) => r.date)),
-        guardCreated: new Date(guard.created_at),
+        guardCreatedDate: guard.created_at ? format(new Date(guard.created_at), "yyyy-MM-dd") : null,
       };
     },
   });
@@ -63,9 +63,15 @@ function AttendancePage() {
   let presentCount = 0;
   let absentCount = 0;
   for (const d of days) {
-    if (isFuture(d)) continue;
-    if (data?.guardCreated && d < new Date(format(data.guardCreated, "yyyy-MM-dd"))) continue;
-    if (presentDates.has(format(d, "yyyy-MM-dd"))) presentCount++;
+    const dStr = format(d, "yyyy-MM-dd");
+    const isPresent = presentDates.has(dStr);
+    const isFutureDay = isFuture(d);
+    const isBeforeJoin = data?.guardCreatedDate && dStr < data.guardCreatedDate;
+
+    if (isFutureDay) continue;
+    if (isBeforeJoin) continue;
+    
+    if (isPresent) presentCount++;
     else absentCount++;
   }
 
@@ -113,23 +119,22 @@ function AttendancePage() {
             const key = format(d, "yyyy-MM-dd");
             const isPresent = presentDates.has(key);
             const future = isFuture(d);
-            const beforeJoin =
-              data?.guardCreated && d < new Date(format(data.guardCreated, "yyyy-MM-dd"));
+            const beforeJoin = data?.guardCreatedDate && key < data.guardCreatedDate;
             return (
               <div
                 key={key}
-                className={`relative flex aspect-square flex-col items-center justify-center rounded-lg text-xs font-medium ${
+                className={`relative flex aspect-square flex-col items-center justify-center rounded-lg text-xs font-medium transition-all ${
                   future || beforeJoin
-                    ? "bg-muted/40 text-muted-foreground/50"
+                    ? "bg-muted/40 text-muted-foreground/40"
                     : isPresent
-                      ? "bg-success/15 text-success"
-                      : "bg-destructive/10 text-destructive"
-                } ${isToday(d) ? "ring-2 ring-primary" : ""}`}
+                      ? "bg-success/20 text-success ring-1 ring-success/30"
+                      : "bg-destructive/10 text-destructive ring-1 ring-destructive/20"
+                } ${isToday(d) ? "ring-2 ring-primary ring-offset-1" : ""}`}
               >
                 <span>{format(d, "d")}</span>
                 {!future && !beforeJoin && (
                   <span className="mt-0.5">
-                    {isPresent ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                    {isPresent ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
                   </span>
                 )}
               </div>

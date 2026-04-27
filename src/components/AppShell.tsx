@@ -29,8 +29,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
           <div className="flex items-center gap-1">
             {isAdmin && (
-              <Button asChild variant="ghost" size="sm" className="h-8">
-                <Link to="/admin">Admin</Link>
+              <Button asChild variant="outline" size="sm" className="h-8 border-primary/20 bg-primary/5 text-primary hover:bg-primary/10">
+                <Link to="/admin">Admin Panel</Link>
               </Button>
             )}
             <Button
