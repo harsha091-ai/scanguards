@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import type { ReactNode } from "react";
 
 const navItems = [
-  { to: "/", label: "Home", icon: Home },
+  { to: "/dashboard", label: "Home", icon: Home },
   { to: "/scan", label: "Scan", icon: QrCode },
   { to: "/attendance", label: "Attend", icon: Calendar },
   { to: "/salary", label: "Salary", icon: Wallet },
@@ -54,8 +54,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <ul className="mx-auto flex max-w-md items-stretch justify-around">
           {navItems.map(({ to, label, icon: Icon }) => {
-            const active =
-              to === "/" ? location.pathname === "/" : location.pathname.startsWith(to);
+            const active = location.pathname.startsWith(to);
             return (
               <li key={to} className="flex-1">
                 <Link
