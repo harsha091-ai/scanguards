@@ -5,13 +5,9 @@
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
-import { nitro } from "nitro/vite";
 
 export default defineConfig({
   cloudflare: false,
-  // Nitro builds a server output that Vercel auto-detects as Vercel Functions.
-  // Required for deploying TanStack Start apps to Vercel.
-  plugins: [nitro()],
   vite: {
     server: {
       host: "0.0.0.0",
