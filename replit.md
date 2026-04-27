@@ -32,10 +32,15 @@ QR-based attendance app for security guards built on TanStack Start (React 19 + 
 ## Scripts
 
 - `npm run dev` — start Vite SSR dev server
-- `npm run build` — production build (Cloudflare Workers preset via lovable config)
+- `npm run build` — production build (outputs `dist/client/` + `dist/server/server.js`)
 - `npm run preview` — preview built client
 - `npm run lint` / `npm run format`
 
 ## Deployment
 
-Configured as **autoscale** running `npm run dev`. The original project targets Cloudflare Workers / Netlify; on Replit the dev server is used because the build output is Workers-specific. Switch to a Node SSR build if you want a production-grade Replit deployment.
+Configured as **autoscale**:
+
+- **Build**: `npm run build` — produces `dist/client/` (static assets) and `dist/server/server.js` (Node-compatible fetch handler).
+- **Run**: `node server.mjs` — small `srvx`-based Node HTTP server that serves the static assets from `dist/client` and forwards all other requests to the SSR fetch handler. Listens on `process.env.PORT` (Replit autoscale sets this) and falls back to `5000`.
+
+`vite.config.ts` passes `cloudflare: false` to `@lovable.dev/vite-tanstack-config` so the build targets a generic Node/web fetch runtime instead of Cloudflare Workers. The original `wrangler.jsonc` and `netlify.toml` are kept for reference but unused on Replit.
